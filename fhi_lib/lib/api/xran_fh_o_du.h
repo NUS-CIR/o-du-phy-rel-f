@@ -141,7 +141,7 @@ extern "C" {
 #define XRAN_MAX_SECTIONS_PER_SYM    (XRAN_MAX_SECTIONS_PER_SLOT)  /**< Max number of different sections in single slot (section may be equal to RB allocation for UE) */
 #define XRAN_MIN_SECTIONS_PER_SYM    (XRAN_MIN_SECTIONS_PER_SLOT)  /**< Min number of different sections in single slot (section may be equal to RB allocation for UE) */
 
-#define XRAN_MAX_FRAGMENT            (4)   /**< Max number of fragmentations in single symbol */
+#define XRAN_MAX_FRAGMENT            (6)   /**< Max number of fragmentations in single symbol */
 #define XRAN_MAX_SET_BFWS            (64)  /**< Assumed 64Ant, BFP 9bit with 9K jumbo frame */
 
 #define XRAN_MAX_PKT_BURST (448+4) /**< 4x14x8 symbols per ms */
@@ -1192,6 +1192,31 @@ int32_t xran_reg_physide_cb_by_dev_id(void *pHandle, xran_fh_tti_callback_fn Cb,
  *   current TTI number [0-7999]
  */
 int32_t xran_get_slot_idx (uint32_t PortId, uint32_t *nFrameIdx, uint32_t *nSubframeIdx,  uint32_t *nSlotIdx, uint64_t *nSecond);
+
+/**
+ * @ingroup xran
+ *
+ *   Function returns Frame, Subframe, Slot Number based on rx_tti
+ *
+ * @param tti
+ *    tti for which to compute Frame, Subframe, Slot
+ *
+ * @param nFrameIdx
+ *    Pointer to Frame number [0-99]
+ *
+ * @param nSubframeIdx
+ *    Pointer to Subframe number [0-10]
+ *
+ * @param nSlotIdx
+ *    Pointer to Slot number [0-7]
+ *
+ * @param nSecond
+ *    Pointer to current UTC second
+ *
+ * @return
+ *   current TTI number [0-7999]
+ */
+int32_t xran_get_slot_idx_from_tti(uint32_t tti, uint32_t *nFrameIdx, uint32_t *nSubframeIdx, uint32_t *nSlotIdx, uint64_t *nSecond);
 
 /**
  * @ingroup xran
