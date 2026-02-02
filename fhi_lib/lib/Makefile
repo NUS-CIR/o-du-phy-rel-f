@@ -95,9 +95,9 @@ endif
 
 RTE_TARGET ?= x86_64-native-linux-icc
 ifeq ($(TARGET), x86)
-RTE_INC := $(shell PKG_CONFIG_PATH=$(PKG_CONFIG_PATH):/usr/lib64/pkgconfig:$(RTE_SDK)/build/meson-uninstalled pkgconf --cflags-only-I libdpdk)
+RTE_INC := $(shell PKG_CONFIG_PATH=$(PKG_CONFIG_PATH):/usr/lib64/pkgconfig:$(RTE_SDK)/build/meson-uninstalled pkg-config --cflags-only-I libdpdk)
 else ifeq ($(TARGET), armv8)
-RTE_INC := $(pkgconf --cflags-only-I libdpdk)
+RTE_INC := $(shell pkg-config --cflags-only-I libdpdk)
 endif
 
 API_DIR := $(PROJECT_DIR)/api
@@ -187,7 +187,7 @@ CPP_FLAGS +=  -fp-model fast -march=icelake-server -mintrinsic-promote -Wno-unus
 endif
 
 
-INC :=  -I$(API_DIR) -I$(ETH_DIR) -I$(SRC_DIR) -I$(RTE_INC)
+INC :=  -I$(API_DIR) -I$(ETH_DIR) -I$(SRC_DIR) $(RTE_INC)
 DEF :=
 ifeq ($(MLOG),1)
 	INC  += -I$(MLOG_DIR)/source

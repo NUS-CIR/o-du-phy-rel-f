@@ -419,6 +419,7 @@ struct xran_io_cfg {
     uint16_t num_rxq;             /**< number of RX queues per VF */
     char *dpdk_dev[XRAN_VF_MAX]; /**< VFs devices  */
     char *bbdev_dev[1];      /**< BBDev dev name */
+    char *bbdev_vfio_vf_token[1];      /**< BBDev dev token */
     int32_t bbdev_mode;      /**< DPDK for BBDev */
     uint32_t dpdkIoVaMode;   /**< IOVA Mode */
     uint32_t dpdkMemorySize; /**< DPDK max memory allocation */
