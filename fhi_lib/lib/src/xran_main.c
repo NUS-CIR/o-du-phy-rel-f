@@ -1193,7 +1193,7 @@ xran_prepare_cp_ul_slot(uint16_t xran_port_id, uint32_t nSlotIdx,  uint32_t nCcS
 
                             beam_id = xran_get_beamid(pHandle, XRAN_DIR_UL, cc_id, port_id, slot_id);
                             pBufList = &(p_xran_dev_ctx->sFrontHaulRxPrbMapBbuIoBufCtrl[buf_id][cc_id][ant_id].sBufferList);
-                            struct xran_prb_map *prbMap = pBufList->pBuffers->pData;
+                            struct xran_prb_map *prbMap = (struct xran_prb_map *)pBufList->pBuffers->pData;
                             struct xran_prb_elm *pPrbElm = &prbMap->prbMap[0]; //mjoang
                             beam_id = pPrbElm->nBeamIndex;
                             ret = generate_cpmsg_prach(pHandle, &params, sect_geninfo, mbuf, p_xran_dev_ctx,
@@ -1366,7 +1366,7 @@ tx_cp_ul_cb(struct rte_timer *tim, void *arg)
 
                             beam_id = xran_get_beamid(pHandle, XRAN_DIR_UL, cc_id, port_id, slot_id);
                             pBufList = &(p_xran_dev_ctx->sFrontHaulRxPrbMapBbuIoBufCtrl[buf_id][cc_id][ant_id].sBufferList);
-                            struct xran_prb_map *prbMap = pBufList->pBuffers->pData;
+                            struct xran_prb_map *prbMap = (struct xran_prb_map *)pBufList->pBuffers->pData;
                             struct xran_prb_elm *pPrbElm = &prbMap->prbMap[0]; //mjoang
                             beam_id = pPrbElm->nBeamIndex;
                         ret = generate_cpmsg_prach(pHandle, &params, sect_geninfo, mbuf, p_xran_dev_ctx,
@@ -3782,6 +3782,7 @@ xran_open(void *pHandle, struct xran_fh_config* pConf)
     p_xran_dev_ctx->puschMaskSlot = pConf->puschMaskSlot;
     p_xran_dev_ctx->DynamicSectionEna = pConf->DynamicSectionEna;
     p_xran_dev_ctx->RunSlotPrbMapBySymbolEnable = pConf->RunSlotPrbMapBySymbolEnable;
+    p_xran_dev_ctx->LiteOnIgnoreUPSectionIdEnable = pConf->LiteOnIgnoreUPSectionIdEnable;
     p_xran_dev_ctx->dssEnable = pConf->dssEnable;
     p_xran_dev_ctx->dssPeriod = pConf->dssPeriod;
     for(i=0; i<pConf->dssPeriod; i++) {
@@ -4254,7 +4255,7 @@ int32_t xran_init_PrbMap_by_symbol_from_cfg(struct xran_prb_map* p_PrbMapIn, str
     int32_t i = 0, j = 0, nPrbElm = 0;
     int16_t iqwidth = p_PrbMapIn->prbMap[0].iqWidth;
     struct xran_prb_elm *p_prb_elm_src, *p_prb_elm_dst;
-    struct xran_prb_elm prbMapTemp[XRAN_NUM_OF_SYMBOL_PER_SLOT];
+    struct xran_prb_elm prbMapTemp[XRAN_NUM_OF_SYMBOL_PER_SLOT] = {0} ;  // Need to initialize to zero for field sec_desc.
     int32_t nRBStart_tmp, nRBremain, nStartSymb, nEndSymb, nRBStart, nRBEnd, nRBSize;
     // int32_t eth_xran_up_headers_sz = sizeof(struct eth_xran_up_pkt_hdr);
     // int32_t nmaxRB = (mtu - eth_xran_up_headers_sz - RTE_PKTMBUF_HEADROOM)/XRAN_PAYLOAD_1_RB_SZ(iqwidth);
@@ -4262,7 +4263,6 @@ int32_t xran_init_PrbMap_by_symbol_from_cfg(struct xran_prb_map* p_PrbMapIn, str
     int32_t nmaxRB = (mtu - eth_xran_up_headers_sz - RTE_PKTMBUF_HEADROOM)/(XRAN_PAYLOAD_1_RB_SZ(iqwidth)+sizeof(struct data_section_hdr));
     if (mtu==9600)
         nmaxRB--;   //for some reason when mtu is 9600, only 195 RB can be sent, not 196
-
 
     memcpy(p_PrbMapOut, p_PrbMapIn, sizeof(struct xran_prb_map));
     for(i = 0; i < XRAN_NUM_OF_SYMBOL_PER_SLOT; i++)
@@ -4338,26 +4338,30 @@ int32_t xran_init_PrbMap_by_symbol_from_cfg(struct xran_prb_map* p_PrbMapIn, str
 
     for(; i < XRAN_NUM_OF_SYMBOL_PER_SLOT; i++)
     {
-        if((nRBStart == prbMapTemp[i].nRBStart) && (nRBSize == prbMapTemp[i].nRBSize))
+        if((prbMapTemp[i].nRBSize != 0))
         {
-                prbMapTemp[nPrbElm].numSymb++;
-        }
-        else
-        {
-            nPrbElm++;
-            prbMapTemp[nPrbElm].nStartSymb = prbMapTemp[i].nStartSymb;
-            prbMapTemp[nPrbElm].nRBStart = prbMapTemp[i].nRBStart;
-            prbMapTemp[nPrbElm].nRBSize = prbMapTemp[i].nRBSize;
-            prbMapTemp[nPrbElm].nBeamIndex = prbMapTemp[i].nBeamIndex;
-            prbMapTemp[nPrbElm].bf_weight_update = prbMapTemp[i].bf_weight_update;
-            prbMapTemp[nPrbElm].compMethod = prbMapTemp[i].compMethod;
-            prbMapTemp[nPrbElm].iqWidth = prbMapTemp[i].iqWidth;
-            prbMapTemp[nPrbElm].ScaleFactor = prbMapTemp[i].ScaleFactor;
-            prbMapTemp[nPrbElm].reMask = prbMapTemp[i].reMask;
-            prbMapTemp[nPrbElm].BeamFormingType = prbMapTemp[i].BeamFormingType;
+            if (false) // Force it to generate multiple prbMapElm, one for each symbol even if they are of the same RBs
+            //if((nRBStart == prbMapTemp[i].nRBStart) && (nRBSize == prbMapTemp[i].nRBSize))
+            {
+                    prbMapTemp[nPrbElm].numSymb++;
+            }
+            else
+            {
+                nPrbElm++;
+                prbMapTemp[nPrbElm].nStartSymb = prbMapTemp[i].nStartSymb;
+                prbMapTemp[nPrbElm].nRBStart = prbMapTemp[i].nRBStart;
+                prbMapTemp[nPrbElm].nRBSize = prbMapTemp[i].nRBSize;
+                prbMapTemp[nPrbElm].nBeamIndex = prbMapTemp[i].nBeamIndex;
+                prbMapTemp[nPrbElm].bf_weight_update = prbMapTemp[i].bf_weight_update;
+                prbMapTemp[nPrbElm].compMethod = prbMapTemp[i].compMethod;
+                prbMapTemp[nPrbElm].iqWidth = prbMapTemp[i].iqWidth;
+                prbMapTemp[nPrbElm].ScaleFactor = prbMapTemp[i].ScaleFactor;
+                prbMapTemp[nPrbElm].reMask = prbMapTemp[i].reMask;
+                prbMapTemp[nPrbElm].BeamFormingType = prbMapTemp[i].BeamFormingType;
 
-            nRBStart = prbMapTemp[i].nRBStart;
-            nRBSize = prbMapTemp[i].nRBSize;
+                nRBStart = prbMapTemp[i].nRBStart;
+                nRBSize = prbMapTemp[i].nRBSize;
+            }
         }
     }
 

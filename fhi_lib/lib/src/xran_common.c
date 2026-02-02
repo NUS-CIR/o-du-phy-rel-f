@@ -52,6 +52,8 @@
 #include "xran_printf.h"
 #include "xran_mlog_lnx.h"
 
+#include "xran_frame_struct.h"
+
 static struct timespec sleeptime = {.tv_nsec = 1E3 }; /* 1 us */
 
 extern int32_t first_call;
@@ -532,13 +534,30 @@ int process_mbuf_batch(struct rte_mbuf* pkt_q[], void* handle, int16_t num, stru
             if (pRbMap)
             {
                 /** Get the prb_elem_id */
+                u_int8_t section_id_tmp;    // hack for LiteON FR2 : receive UP section ID = 13
+                u_int8_t prb_elem_id_tmp;   // hack for LiteON FR2 : receive UP section ID = 13
+                if(0 == p_dev_ctx->LiteOnIgnoreUPSectionIdEnable) {
+                    section_id_tmp = prb_elem_id_tmp = sect_id[i];
+                } else {
+                    u_int8_t mixed_ul_sym_start = 0;
+                    if (xran_fs_get_slot_type(xran_port, CC_ID[i], tti, XRAN_SLOT_TYPE_SP)) {
+                        mixed_ul_sym_start = XRAN_NUM_OF_SYMBOL_PER_SLOT - xran_fs_get_num_ul_sym_sp(xran_port, CC_ID[i], tti);
+                    }
+                    u_int8_t section_id_tmp = symb_id[i] - mixed_ul_sym_start;  // hack for LiteON FR2 : receive UP section ID = 13, MTU 9000
+                    prb_elem_id_tmp = section_id_tmp;                           // hack for LiteON FR2 : receive UP section ID = 13, MTU 9000
+                    //Note for future reference when using MTU 1500
+                    //prb_elem_id_tmp = 2*section_id_tmp;                       // For LiteON FR2 : receive UP section ID = 13, MTU 1500
+                    //if (start_prbu !=0)                                       // For LiteON FR2 : receive UP section ID = 13, MTU 1500
+                    //    prb_elem_id_tmp++;                                    // For LiteON FR2 : receive UP section ID = 13, MTU 1500
+                }
+
                 total_sections=0;
                 if(pRbMap->prbMap[0].bf_weight.extType == 1)
                 {
                     for(idxElm=0 ; idxElm < pRbMap->nPrbElm ; idxElm++)
                     {
                         total_sections += pRbMap->prbMap[idxElm].bf_weight.numSetBFWs;
-                        if(total_sections >= (sect_id[i] + 1))
+                        if(total_sections >= (/*sect_id[i]*/ prb_elem_id_tmp + 1))
                 {
                             prb_elem_id[i] = idxElm;
                             break;
@@ -547,12 +566,12 @@ int process_mbuf_batch(struct rte_mbuf* pkt_q[], void* handle, int16_t num, stru
                 }
                 else
                 {
-                    prb_elem_id[i] = sect_id[i];
+                    prb_elem_id[i] = prb_elem_id_tmp; /*sect_id[i];*/
                 }
 
                 if (prb_elem_id[i] >= pRbMap->nPrbElm)
                 {
-                    print_err("sect_id %d, prb_elem_id %d !=pRbMap->nPrbElm %d\n", sect_id[i], prb_elem_id[i], pRbMap->nPrbElm);
+                    print_err("sect_id %d, prb_elem_id %d !=pRbMap->nPrbElm %d\n", /*sect_id[i]*/ section_id_tmp, prb_elem_id[i], pRbMap->nPrbElm);
                     ret_data[i] = MBUF_FREE;
                     continue;
                 }
@@ -618,13 +637,30 @@ int process_mbuf_batch(struct rte_mbuf* pkt_q[], void* handle, int16_t num, stru
             if (pRbMap)
             {
                 /** Get the prb_elem_id */
+                u_int8_t section_id_tmp;    // hack for LiteON FR2 : receive UP section ID = 13
+                u_int8_t prb_elem_id_tmp;   // hack for LiteON FR2 : receive UP section ID = 13
+                if(0 == p_dev_ctx->LiteOnIgnoreUPSectionIdEnable) {
+                    section_id_tmp = prb_elem_id_tmp = sect_id[i];
+                } else {
+                    u_int8_t mixed_ul_sym_start = 0;
+                    if (xran_fs_get_slot_type(xran_port, CC_ID[i], tti, XRAN_SLOT_TYPE_SP)) {
+                        mixed_ul_sym_start = XRAN_NUM_OF_SYMBOL_PER_SLOT - xran_fs_get_num_ul_sym_sp(xran_port, CC_ID[i], tti);
+                    }
+                    u_int8_t section_id_tmp = symb_id[i] - mixed_ul_sym_start;  // hack for LiteON FR2 : receive UP section ID = 13, MTU 9000
+                    prb_elem_id_tmp = section_id_tmp;                           // hack for LiteON FR2 : receive UP section ID = 13, MTU 9000
+                    //Note for future reference when using MTU 1500
+                    //prb_elem_id_tmp = 2*section_id_tmp;                       // For LiteON FR2 : receive UP section ID = 13, MTU 1500
+                    //if (start_prbu !=0)                                       // For LiteON FR2 : receive UP section ID = 13, MTU 1500
+                    //    prb_elem_id_tmp++;                                    // For LiteON FR2 : receive UP section ID = 13, MTU 1500
+                }
+
                 total_sections=0;
                 if(pRbMap->prbMap[0].bf_weight.extType == 1)
                 {
                     for(idxElm=0 ; idxElm < pRbMap->nPrbElm ; idxElm++)
                     {
                         total_sections += pRbMap->prbMap[idxElm].bf_weight.numSetBFWs;
-                        if(total_sections >= (sect_id[i] + 1))
+                        if(total_sections >= (/*sect_id[i]*/ prb_elem_id_tmp + 1))
                         {
                             prb_elem_id[i] = idxElm;
                             break;
@@ -633,12 +669,12 @@ int process_mbuf_batch(struct rte_mbuf* pkt_q[], void* handle, int16_t num, stru
                 }
                 else
                 {
-                    prb_elem_id[i] = sect_id[i];
+                    prb_elem_id[i] = prb_elem_id_tmp; /*sect_id[i];*/
                 }
 
                 if (prb_elem_id[i] >= pRbMap->nPrbElm)
                 {
-                    print_err("sect_id %d, prb_elem_id %d !=pRbMap->nPrbElm %d\n", sect_id[i], prb_elem_id[i], pRbMap->nPrbElm);
+                    print_err("sect_id %d, prb_elem_id %d !=pRbMap->nPrbElm %d\n", /*sect_id[i]*/ section_id_tmp, prb_elem_id[i], pRbMap->nPrbElm);
                     ret_data[i] = MBUF_FREE;
                     continue;
                 }
