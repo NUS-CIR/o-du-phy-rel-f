@@ -1192,6 +1192,10 @@ xran_prepare_cp_ul_slot(uint16_t xran_port_id, uint32_t nSlotIdx,  uint32_t nCcS
                             uint8_t seqid = xran_get_cp_seqid(pHandle, XRAN_DIR_UL, cc_id, port_id);
 
                             beam_id = xran_get_beamid(pHandle, XRAN_DIR_UL, cc_id, port_id, slot_id);
+                            pBufList = &(p_xran_dev_ctx->sFrontHaulRxPrbMapBbuIoBufCtrl[buf_id][cc_id][ant_id].sBufferList);
+                            struct xran_prb_map *prbMap = pBufList->pBuffers->pData;
+                            struct xran_prb_elm *pPrbElm = &prbMap->prbMap[0]; //mjoang
+                            beam_id = pPrbElm->nBeamIndex;
                             ret = generate_cpmsg_prach(pHandle, &params, sect_geninfo, mbuf, p_xran_dev_ctx,
                                         frame_id, subframe_id, slot_id, tti,
                                         beam_id, cc_id, port_id, occasionid, seqid);
@@ -1361,6 +1365,10 @@ tx_cp_ul_cb(struct rte_timer *tim, void *arg)
                             uint8_t seqid = xran_get_cp_seqid(pHandle, XRAN_DIR_UL, cc_id, port_id);
 
                             beam_id = xran_get_beamid(pHandle, XRAN_DIR_UL, cc_id, port_id, slot_id);
+                            pBufList = &(p_xran_dev_ctx->sFrontHaulRxPrbMapBbuIoBufCtrl[buf_id][cc_id][ant_id].sBufferList);
+                            struct xran_prb_map *prbMap = pBufList->pBuffers->pData;
+                            struct xran_prb_elm *pPrbElm = &prbMap->prbMap[0]; //mjoang
+                            beam_id = pPrbElm->nBeamIndex;
                         ret = generate_cpmsg_prach(pHandle, &params, sect_geninfo, mbuf, p_xran_dev_ctx,
                                         frame_id, subframe_id, slot_id, tti,
                                         beam_id, cc_id, port_id, occasionid, seqid);
