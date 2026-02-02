@@ -201,6 +201,7 @@ struct __rte_cache_aligned xran_device_ctx
 
     int32_t DynamicSectionEna;
     int32_t RunSlotPrbMapBySymbolEnable;
+    uint8_t LiteOnIgnoreUPSectionIdEnable; /**< handle LiteOn issue where section id on UP packet is wrongly set to 13. */
     int64_t offset_sec;
     int64_t offset_nsec;    //offset to GPS time calcuated based on alpha and beta
     uint32_t interval_us_local;
