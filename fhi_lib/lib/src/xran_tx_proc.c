@@ -1403,6 +1403,11 @@ xran_process_tx_sym_cp_on_opt(void* pHandle, uint8_t ctx_id, uint32_t tti, int32
 
             if(0!=ptr_sect_elm->cur_index)
             {
+                /* prevent xran from sending DL U-plane packets when it should not */
+                if(p_xran_dev_ctx->fh_init.io_cfg.id == O_DU && xran_fs_get_slot_type(xran_port_id, 0, tti, XRAN_SLOT_TYPE_DL) != 1)
+                {
+                    return 0;
+                }
                 num_sections = ptr_sect_elm->cur_index;
                 /* iterate C-Plane configuration to generate corresponding U-Plane */
                 vf_id = p_xran_dev_ctx->map2vf[direction][cc_id][ant_id][XRAN_UP_VF];

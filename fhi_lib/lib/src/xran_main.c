@@ -646,6 +646,8 @@ xran_prepare_cp_dl_slot(uint16_t xran_port_id, uint32_t nSlotIdx,  uint32_t nCcS
     return ret;
 }
 
+uint32_t prev_dl_tti = -1;
+
 void
 tx_cp_dl_cb(struct rte_timer *tim, void *arg)
 {
@@ -678,7 +680,7 @@ tx_cp_dl_cb(struct rte_timer *tim, void *arg)
 
     if(first_call && p_xran_dev_ctx->enableCP)
     {
-        tti = pTCtx[(xran_lib_ota_tti[PortId] & 1) ^ 1].tti_to_process;
+        tti = pTCtx[(xran_lib_ota_tti[PortId] & 1) ^ 1].tti_to_process + p_xran_dev_ctx->offset_num_slots_cp_dl;
         buf_id = tti % XRAN_N_FE_BUF_LEN;
 
         slot_id     = XranGetSlotNum(tti, SLOTNUM_PER_SUBFRAME(interval_us_local));
@@ -688,6 +690,16 @@ tx_cp_dl_cb(struct rte_timer *tim, void *arg)
         {
             /* Wrap around to next second */
             frame_id = (frame_id + NUM_OF_FRAMES_PER_SECOND) & 0x3ff;
+            prev_dl_tti = -1;
+        }
+        else if (p_xran_dev_ctx->offset_num_slots_cp_dl > 0 && prev_dl_tti == xran_fs_get_max_slot(PortId) - 1 + p_xran_dev_ctx->offset_num_slots_cp_dl)
+        {
+            prev_dl_tti = tti;
+            tti = xran_fs_get_max_slot(PortId) + p_xran_dev_ctx->offset_num_slots_cp_dl;
+        }
+        else
+        {
+            prev_dl_tti = tti;
         }
 
         ctx_id      = tti % XRAN_MAX_SECTIONDB_CTX;
@@ -1240,6 +1252,7 @@ xran_prepare_cp_ul_slot(uint16_t xran_port_id, uint32_t nSlotIdx,  uint32_t nCcS
     return ret;
 }
 
+uint32_t prev_ul_tti = -1;
 
 void
 tx_cp_ul_cb(struct rte_timer *tim, void *arg)
@@ -1281,7 +1294,7 @@ tx_cp_ul_cb(struct rte_timer *tim, void *arg)
         pTCtx       = &p_xran_dev_ctx->timer_ctx[0];
         interval    = p_xran_dev_ctx->interval_us_local;
         PortId      = p_xran_dev_ctx->xran_port_id;
-    tti = pTCtx[(xran_lib_ota_tti[PortId] & 1) ^ 1].tti_to_process;
+    tti = pTCtx[(xran_lib_ota_tti[PortId] & 1) ^ 1].tti_to_process + p_xran_dev_ctx->offset_num_slots_cp_ul;
 
     buf_id = tti % XRAN_N_FE_BUF_LEN;
         ctx_id      = tti % XRAN_MAX_SECTIONDB_CTX;
@@ -1291,7 +1304,20 @@ tx_cp_ul_cb(struct rte_timer *tim, void *arg)
 
         /* Wrap around to next second */
         if(tti == 0)
+        {
             frame_id = (frame_id + NUM_OF_FRAMES_PER_SECOND) & 0x3ff;
+            prev_ul_tti = tti;
+        }
+        else if (p_xran_dev_ctx->offset_num_slots_cp_ul > 0 && prev_ul_tti == xran_fs_get_max_slot(PortId) - 1 + p_xran_dev_ctx->offset_num_slots_cp_ul)
+        {
+            prev_ul_tti = tti;
+            tti = xran_fs_get_max_slot(PortId) + p_xran_dev_ctx->offset_num_slots_cp_ul;
+        }
+        else
+        {
+            prev_ul_tti = tti;
+        }
+
     if(xran_get_ru_category(pHandle) == XRAN_CATEGORY_A)
         num_eAxc    = xran_get_num_eAxc(pHandle);
     else
